@@ -6,6 +6,9 @@ __pycache__/
 # C extensions
 *.so
 
+# Personal data from garmin_sync pipeline (only store locally)
+data/
+
 # Distribution / packaging
 .Python
 build/
@@ -205,3 +208,4 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+garmin_sync/master-demo.py
