@@ -6,7 +6,7 @@ import os
 from ..sub_modules.file_utilities import save_to_json
 
 # Output path
-OUTPUT_FILE = Path("garmin_sync/data/daily_steps.json")
+OUTPUT_FILE = Path("data/daily_steps.json")
 OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 def fetch_raw_steps(garmin_connection: Garmin) -> list[dict]:
