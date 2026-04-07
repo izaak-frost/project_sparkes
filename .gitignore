@@ -208,4 +208,7 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
-garmin_sync/master-demo.py
+
+
+# Temporary project files for local storage
+project_helper/*
