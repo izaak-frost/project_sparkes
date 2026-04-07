@@ -3,7 +3,7 @@ import sys
 import requests
 
 from getpass import getpass
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 from garminconnect import (
     Garmin,
     GarminConnectAuthenticationError,
@@ -11,7 +11,7 @@ from garminconnect import (
     GarminConnectTooManyRequestsError,
 )
 
-load_dotenv()
+#load_dotenv()
 
 EMAIL = os.getenv("GARMIN_EMAIL")
 PASSWORD = os.getenv("GARMIN_PASSWORD")
@@ -34,7 +34,7 @@ def authenticate() -> Garmin | None:
         print(f"[INFO] Attempting login using stored tokens from: '{GARMIN_TOKENS}'")
         garmin_connection = Garmin()
         garmin_connection.login(GARMIN_TOKENS)
-        print("[INFO] Successfully logged in using stored tokens.\n")
+        print("[INFO] Successfully logged in using stored tokens.")
         return garmin_connection
 
     except GarminConnectTooManyRequestsError as err:

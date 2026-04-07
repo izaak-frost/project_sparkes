@@ -1,9 +1,9 @@
 from pathlib import Path
 from datetime import date
 from garminconnect import Garmin
-import json
+import os
 
-from ..garmin_authentication import authenticate
+from ..sub_modules.file_utilities import save_to_json
 
 # Output path
 OUTPUT_FILE = Path("garmin_sync/data/weights.json")
@@ -11,10 +11,10 @@ OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
 
 def fetch_raw_weigh_ins(garmin_connection: Garmin) -> dict:
     """Fetch raw all-time-ish weigh-in data from Garmin."""
-    start_date = "2000-01-01"
+    start_date = os.getenv("START_DATE", "2000-01-01")
     end_date = date.today().isoformat()
 
-    print(f"Fetching weigh-ins from {start_date} to {end_date}...")
+    print(f"\nFetching weigh-ins from {start_date} to {end_date}...")
     data = garmin_connection.get_weigh_ins(start_date, end_date)
 
     if not isinstance(data, dict):
@@ -60,22 +60,10 @@ def extract_date_weight_pairs(raw_data: dict) -> list[dict]:
     return results
 
 
-def save_to_json(data: list[dict]) -> None:
-    """Save simplified weigh-in data to JSON."""
-    with OUTPUT_FILE.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-    print(f"Saved {len(data)} weigh-ins to {OUTPUT_FILE}")
-
-
-def get_weight_data() -> list[dict]:
-    garmin_connection = authenticate()
-
-    if garmin_connection is None:
-        raise RuntimeError("Failed to authenticate with Garmin.")
+def get_weight_data(garmin_connection) -> list[dict]:
 
     raw_data = fetch_raw_weigh_ins(garmin_connection)
     weigh_ins = extract_date_weight_pairs(raw_data)
-    save_to_json(weigh_ins)
+    save_to_json(weigh_ins, "weigh-ins", OUTPUT_FILE)
 
-    return weigh_ins
+    return
