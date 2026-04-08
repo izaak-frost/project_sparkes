@@ -1,15 +1,57 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
 
 import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
 import ParallaxScrollView from '@/components/parallax-scroll-view';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Fonts } from '@/constants/theme';
 
+type Weight = {
+  date: string;
+  weight: number;
+};
+
+type Step = {
+  date: string;
+  steps: number;
+};
+
 export default function TabTwoScreen() {
+  const API_BASE_URL = 'http://192.168.0.28:8000';
+
+  const [status, setStatus] = useState('Loading...');
+  const [weights, setWeights] = useState<Weight[]>([]);
+  const [steps, setSteps] = useState<Step[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setStatus('Fetching data...');
+
+        const weightsResponse = await fetch(`${API_BASE_URL}/weights`);
+        const stepsResponse = await fetch(`${API_BASE_URL}/steps`);
+
+        const weightsData = await weightsResponse.json();
+        const stepsData = await stepsResponse.json();
+
+        setWeights(Array.isArray(weightsData) ? weightsData : []);
+        setSteps(Array.isArray(stepsData) ? stepsData : []);
+
+        setStatus('Loaded successfully');
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : 'Unknown error';
+
+        setStatus(`Error: ${message}`);
+        console.error(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
@@ -22,77 +64,39 @@ export default function TabTwoScreen() {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
+        <ThemedText type="title" style={{ fontFamily: Fonts.rounded }}>
           Explore
         </ThemedText>
       </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
+
+      <ThemedText>Status: {status}</ThemedText>
+
+      {/* Weights */}
+      <Collapsible title="Weights">
+        {weights.length === 0 ? (
+          <ThemedText>No weight data</ThemedText>
+        ) : (
+          weights.map((item, index) => (
+            <ThemedView key={`weight-${index}`} style={styles.row}>
+              <ThemedText style={styles.date}>{item.date}</ThemedText>
+              <ThemedText style={styles.value}>{item.weight} kg</ThemedText>
+            </ThemedView>
+          ))
+        )}
       </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
+
+      {/* Steps */}
+      <Collapsible title="Steps">
+        {steps.length === 0 ? (
+          <ThemedText>No step data</ThemedText>
+        ) : (
+          steps.map((item, index) => (
+            <ThemedView key={`step-${index}`} style={styles.row}>
+              <ThemedText style={styles.date}>{item.date}</ThemedText>
+              <ThemedText style={styles.value}>{item.steps} steps</ThemedText>
+            </ThemedView>
+          ))
+        )}
       </Collapsible>
     </ParallaxScrollView>
   );
@@ -108,5 +112,19 @@ const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: 'row',
     gap: 8,
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomWidth: 0.5,
+    borderColor: '#ccc',
+  },
+  date: {
+    fontFamily: Fonts.mono,
+    fontSize: 12,
+  },
+  value: {
+    fontWeight: 'bold',
   },
 });
