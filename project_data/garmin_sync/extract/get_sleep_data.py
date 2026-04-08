@@ -1,5 +1,5 @@
 from pathlib import Path
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 from garminconnect import Garmin
 import json
 import os
@@ -37,8 +37,8 @@ def timestamp_ms_to_hhmm(timestamp_ms: int | None) -> str | None:
     """Convert Garmin local timestamp in milliseconds to HH:MM."""
     if timestamp_ms is None:
         return None
-
-    dt = datetime.fromtimestamp(timestamp_ms / 1000)
+    
+    dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
     return dt.strftime("%H:%M")
 
 
