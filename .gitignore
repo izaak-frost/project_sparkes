@@ -212,3 +212,6 @@ __marimo__/
 
 # Temporary project files for local storage
 project_helper/*
+
+# Google sheet credentials
+project_data/credentials/*
