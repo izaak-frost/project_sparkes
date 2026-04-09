@@ -14,7 +14,7 @@ def fetch_raw_weigh_ins(garmin_connection: Garmin) -> dict:
     start_date = os.getenv("START_DATE", "2000-01-01")
     end_date = date.today().isoformat()
 
-    print(f"\nFetching weigh-ins from {start_date} to {end_date}...")
+    print(f"    Fetching weigh-ins from {start_date} to {end_date}...")
     data = garmin_connection.get_weigh_ins(start_date, end_date)
 
     if not isinstance(data, dict):

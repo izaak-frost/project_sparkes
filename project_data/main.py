@@ -3,9 +3,11 @@ load_dotenv()
 
 from garmin_sync.sub_modules.garmin_authentication import authenticate
 
-from garmin_sync.extract.get_weight import get_weight_data
-from garmin_sync.extract.get_steps import get_step_data
-from garmin_sync.extract.get_sleep_data import get_sleep_data
+from garmin_sync.extract_methods.get_weight import get_weight_data
+from garmin_sync.extract_methods.get_steps import get_step_data
+from garmin_sync.extract_methods.get_sleep_data import get_sleep_data
+
+from garmin_sync.export_methods.export_sleep import export_sleep_to_gsheet
 
 def main():
     garmin_connection = authenticate()
@@ -14,9 +16,15 @@ def main():
         raise RuntimeError("Failed to authenticate with Garmin.")
 
     #The python functions to collect Garmin data
-    weight_data = get_weight_data(garmin_connection)
-    step_data = get_step_data(garmin_connection)
-    sleep_data = get_sleep_data(garmin_connection)
+    get_weight_data(garmin_connection)
+    get_step_data(garmin_connection)
+    get_sleep_data(garmin_connection)
+    
+    print(f"\n[INFO] Garmin Data extracted successfully and updated.")
 
+    print(f"[INFO] Updating Google Sheets document...")
+    export_sleep_to_gsheet()
+
+    print(f"\n[INFO] Job completed, data extracted and exported.\n")
 if __name__ == "__main__":
     main()

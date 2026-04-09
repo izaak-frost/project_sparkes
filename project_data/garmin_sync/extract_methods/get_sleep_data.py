@@ -54,11 +54,11 @@ def load_existing_sleep_data(file_path: Path) -> list[dict]:
         if isinstance(data, list):
             return data
 
-        print(f"Warning: {file_path} does not contain a list. Starting fresh.")
+        print(f"[WARN] {file_path} does not contain a list. Starting fresh.")
         return []
 
     except (json.JSONDecodeError, OSError) as exc:
-        print(f"Warning: Could not read {file_path}: {exc}")
+        print(f"[WARN] Could not read {file_path}: {exc}")
         return []
 
 
@@ -91,12 +91,10 @@ def extract_single_sleep_record(raw_day: dict) -> dict | None:
     Ignores sleepMovement entirely.
     """
     if not isinstance(raw_day, dict):
-        print("Skipped: raw_day is not a dict")
         return None
 
     dto = raw_day.get("dailySleepDTO", {})
     if not isinstance(dto, dict) or not dto:
-        print("Skipped: missing dailySleepDTO")
         return None
 
     sleep_scores = dto.get("sleepScores", {})
@@ -113,7 +111,6 @@ def extract_single_sleep_record(raw_day: dict) -> dict | None:
 
     calendar_date = dto.get("calendarDate")
     if not calendar_date:
-        print("Skipped: missing calendarDate")
         return None
 
     return {
@@ -140,52 +137,31 @@ def get_sleep_data(garmin_connection: Garmin) -> list[dict]:
     start_date = os.getenv("START_DATE", "2000-01-01")
     latest_date = (date.today() - timedelta(days=1)).isoformat()
 
+    print(f"    Fetching sleep data from {start_date} to {latest_date}...")
+
     existing_data = load_existing_sleep_data(OUTPUT_FILE)
     existing_dates = get_existing_dates(existing_data)
 
     all_dates = get_target_dates(start_date, latest_date)
     missing_dates = [d for d in all_dates if d not in existing_dates]
 
-    print(f"START_DATE: {start_date}")
-    print(f"LATEST_DATE: {latest_date}")
-    print(f"Existing records: {len(existing_data)}")
-    print(f"Missing dates to fetch: {len(missing_dates)}")
-
     if not missing_dates:
-        print("\nNo new sleep dates to fetch.")
+        print(f"    Saved {len(existing_data)} days of sleep data to {OUTPUT_FILE}")
         return existing_data
 
     for sleep_date in missing_dates:
-        print(f"\nFetching sleep data for {sleep_date}...")
-
+        
         try:
             raw_day = garmin_connection.get_sleep_data(sleep_date)
-            print(f"Response type for {sleep_date}: {type(raw_day).__name__}")
-
-            if not raw_day:
-                print(f"No sleep data returned for {sleep_date}")
-                continue
-
             record = extract_single_sleep_record(raw_day)
-
-            if record is None:
-                print(f"No usable sleep record extracted for {sleep_date}")
-                continue
-
-            if record["calendarDate"] in existing_dates:
-                print(f"Date already exists after extraction: {record['calendarDate']}")
-                continue
 
             existing_data.append(record)
             existing_dates.add(record["calendarDate"])
 
             existing_data.sort(key=lambda x: x.get("calendarDate", ""))
-            save_to_json(existing_data, "sleep data", OUTPUT_FILE)
-
-            print(f"Added sleep data for {record['calendarDate']}")
+            save_to_json(existing_data, "days of sleep data", OUTPUT_FILE)
 
         except Exception as exc:
-            print(f"Failed to fetch sleep data for {sleep_date}: {exc}")
+            print(f"[ERROR] Failed to fetch sleep data for {sleep_date}: {exc}")
 
-    print(f"\nFinal sleep record count: {len(existing_data)}")
     return existing_data

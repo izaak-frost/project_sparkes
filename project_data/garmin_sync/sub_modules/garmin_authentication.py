@@ -34,7 +34,7 @@ def authenticate() -> Garmin | None:
         print(f"[INFO] Attempting login using stored tokens from: '{GARMIN_TOKENS}'")
         garmin_connection = Garmin()
         garmin_connection.login(GARMIN_TOKENS)
-        print("[INFO] Successfully logged in using stored tokens.")
+        print("[INFO] Successfully logged in using stored tokens.\n")
         return garmin_connection
 
     except GarminConnectTooManyRequestsError as err:

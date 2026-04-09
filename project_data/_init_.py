@@ -1,1 +1,1 @@
-from .garmin_sync.extract.get_weight import get_weight_data
+from .garmin_sync.extract_methods.get_weight import get_weight_data

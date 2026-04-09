@@ -95,10 +95,10 @@ def get_spreadsheet(client: gspread.Client):
     try:
         if spreadsheet_id:
             spreadsheet = client.open_by_key(spreadsheet_id)
-            print(f"Opened spreadsheet by ID: {spreadsheet.title}")
+            print(f"\n    Opened spreadsheet by ID: {spreadsheet.title}")
         else:
             spreadsheet = client.open(spreadsheet_name)
-            print(f"Opened spreadsheet by name: {spreadsheet_name}")
+            print(f"\n    Opened spreadsheet by name: {spreadsheet_name}")
         return spreadsheet
 
     except gspread.SpreadsheetNotFound as exc:
@@ -116,14 +116,14 @@ def get_spreadsheet(client: gspread.Client):
 def get_or_create_worksheet(spreadsheet, worksheet_name: str, rows: int = 3000, cols: int = 20):
     try:
         worksheet = spreadsheet.worksheet(worksheet_name)
-        print(f"Opened existing worksheet: {worksheet_name}")
+        print(f"    Opened existing worksheet: {worksheet_name}")
     except gspread.WorksheetNotFound:
         worksheet = spreadsheet.add_worksheet(
             title=worksheet_name,
             rows=rows,
             cols=cols,
         )
-        print(f"Created worksheet: {worksheet_name}")
+        print(f"    Created worksheet: {worksheet_name}")
     return worksheet
 
 
@@ -483,9 +483,8 @@ def export_sleep_to_gsheet() -> None:
     # Number/date/time formatting
     apply_sheet_formatting(spreadsheet, worksheet, record_count)
 
-    print(f"Exported {record_count} sleep records to '{spreadsheet.title}' / '{WORKSHEET_NAME}'")
-    print(f"Spreadsheet URL: {spreadsheet.url}")
-
+    print(f"\n    Exported {record_count} sleep records to '{spreadsheet.title}' / '{WORKSHEET_NAME}'")
+    #print(f"Spreadsheet URL: {spreadsheet.url}") #TODO place this in the console after all exports done (not each time one export is completed)
 
 if __name__ == "__main__":
     export_sleep_to_gsheet()

@@ -10,4 +10,4 @@ def save_to_json(data: list[dict], record_type:str, output_file: str | Path) -> 
     with output_path.open("w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-    print(f"Saved {len(data)} {record_type} to {output_path}")
+    print(f"    Saved {len(data)} {record_type} to {output_path}\n")
