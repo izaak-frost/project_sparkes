@@ -37,7 +37,7 @@ def timestamp_ms_to_hhmm(timestamp_ms: int | None) -> str | None:
     """Convert Garmin local timestamp in milliseconds to HH:MM."""
     if timestamp_ms is None:
         return None
-    
+
     dt = datetime.fromtimestamp(timestamp_ms / 1000, tz=timezone.utc)
     return dt.strftime("%H:%M")
 
@@ -88,7 +88,6 @@ def get_target_dates(start_date_str: str, end_date_str: str) -> list[str]:
 def extract_single_sleep_record(raw_day: dict) -> dict | None:
     """
     Extract only the required sleep fields from a single Garmin sleep payload.
-    Ignores sleepMovement entirely.
     """
     if not isinstance(raw_day, dict):
         return None
@@ -130,12 +129,15 @@ def extract_single_sleep_record(raw_day: dict) -> dict | None:
 
 def get_sleep_data(garmin_connection: Garmin) -> list[dict]:
     """
-    Fetch sleep data from START_DATE to the latest completed date,
-    skipping dates already present in sleep_data.json.
-    Saves incrementally after each successful fetch.
+    Fetch sleep data from START_DATE to today inclusive.
+
+    - Skips dates already present in sleep_data.json
+    - Attempts to fetch today's sleep in case Garmin has already published it
+    - Safely skips dates where no sleep data is available yet
+    - Saves incrementally after each successful fetch
     """
     start_date = os.getenv("START_DATE", "2000-01-01")
-    latest_date = (date.today() - timedelta(days=1)).isoformat()
+    latest_date = date.today().isoformat()
 
     print(f"    Fetching sleep data from {start_date} to {latest_date}...")
 
@@ -150,10 +152,16 @@ def get_sleep_data(garmin_connection: Garmin) -> list[dict]:
         return existing_data
 
     for sleep_date in missing_dates:
-        
         try:
             raw_day = garmin_connection.get_sleep_data(sleep_date)
             record = extract_single_sleep_record(raw_day)
+
+            if record is None:
+                print(f"    No sleep data available for {sleep_date}; skipping.")
+                continue
+
+            if record["calendarDate"] in existing_dates:
+                continue
 
             existing_data.append(record)
             existing_dates.add(record["calendarDate"])

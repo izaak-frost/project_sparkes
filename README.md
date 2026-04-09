@@ -251,7 +251,8 @@ GARMIN_EMAIL=your_email
 GARMIN_PASSWORD=your_password
 GARMIN_TOKENS=garmin_tokens.json
 
-START_DATE=YYYY-MM-DD
+START_DATE=YYYY-MM-DD             # Date to collect data from
+COACHING_START_DATE=YYYY-MM-DD    # Date that coaching begins (enables historical data to be viewed seperately)
 
 GOOGLE_SERVICE_ACCOUNT_FILE=path_to_credentials.json
 GOOGLE_SHEET_ID=your_sheet_id
