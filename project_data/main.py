@@ -1,6 +1,3 @@
-from dotenv import load_dotenv
-load_dotenv()
-
 from garmin_sync.sub_modules.garmin_authentication import authenticate
 
 from garmin_sync.extract_methods.get_weight import get_weight_data
