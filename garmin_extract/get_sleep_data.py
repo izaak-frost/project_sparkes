@@ -119,7 +119,7 @@ def extract_single_sleep_record(raw_day: dict) -> dict | None:
     }
 
 
-def get_sleep_data(garmin_connection: Garmin) -> list[dict]:
+def get_sleep_data(garmin_connection: Garmin, refresh_dates: list[str] | None = None) -> list[dict]:
     """
     Fetch sleep data from START_DATE to today inclusive.
 
@@ -141,7 +141,8 @@ def get_sleep_data(garmin_connection: Garmin) -> list[dict]:
 
     all_dates = get_target_dates(start_date, latest_date)
     refresh_start = (today() - timedelta(days=refresh_days - 1)).isoformat()
-    missing_dates = [d for d in all_dates if d not in existing_dates or d >= refresh_start]
+    forced = set(refresh_dates or [])
+    missing_dates = [d for d in all_dates if d not in existing_dates or d >= refresh_start or d in forced]
     records = {record["calendarDate"]: record for record in existing_data}
     failed_dates = []
 

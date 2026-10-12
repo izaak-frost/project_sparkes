@@ -66,6 +66,14 @@ python -m unittest discover -s support/tests -v
 ```
 
 Each source is reported separately in `data/daily_status.json`.
+A Sheets refresh also keeps a blank week at the bottom of `CHECK IN QUESTIONS`.
+When the final six-question block contains client responses, coach responses or
+a checked completion box, the next numbered week is appended with the existing
+questions, formatting, merges, checkboxes and row heights. Its responses are
+blank and its boxes unchecked. An already blank final week is left untouched.
+A private snapshot is saved before each append; existing answers are retained.
+Use `python -m publish.export_checkins --dry-run` to preview this independently,
+or `python -m publish.export_checkins` to add the blank week immediately.
 A failed source does not prevent independent sources from updating. The job
 exits nonzero if a source fails or nutrition is absent/stale, while retaining
 successfully collected data.
@@ -103,6 +111,13 @@ pulling Python changes on OCI does not update the installed spreadsheet script.
 
 Garmin steps re-fetch today and the previous six days on every run, replacing
 earlier totals for those dates. Missing older dates are fetched as before.
+On Tuesdays in `HEALTH_TIMEZONE` (Europe/London by default), the daily job also
+re-fetches steps and sleep for the full previous Tuesday–Monday week, replacing
+cached readings and republishing them to Sheets. Weight already refreshes the
+full configured Garmin history on every run, including that week. Monday-night
+corrections saved in Garmin are therefore picked up by Tuesday's 02:30 run.
+This refresh applies to Garmin data; Apple Health corrections still require a
+new phone upload before the daily job runs.
 
 ## Files
 

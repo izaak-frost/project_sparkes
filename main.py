@@ -1,11 +1,11 @@
 """One daily OCI job for Garmin, Google Sheets, Hevy and pushed nutrition."""
 import argparse
-from datetime import date
+from datetime import date, timedelta
 import os
 import sys
 
 # Load the root environment before importing integrations that consult it.
-from support.runtime import DATA_DIR
+from support.runtime import DATA_DIR, today
 from support.config import load_settings
 from support.storage import atomic_json, utc_now
 from support.sync import export_data
@@ -15,6 +15,11 @@ from hevy_extract.workouts import sync_hevy
 def run_daily(only="all", skip_sheets=False) -> int:
     settings = load_settings()
     stages = {}
+    run_date = today()  # HEALTH_TIMEZONE, Europe/London by default.
+    # On Tuesday, refresh the entire completed Tuesday–Monday coaching week.
+    refresh_dates = [(run_date - timedelta(days=offset)).isoformat() for offset in range(7, 0, -1)] if run_date.weekday() == 1 else []
+    if refresh_dates and only in ("all", "garmin", "sleep"):
+        print(f"Tuesday Garmin refresh: {refresh_dates[0]} through {refresh_dates[-1]}", flush=True)
 
     def stage(name, action):
         try:
@@ -43,9 +48,9 @@ def run_daily(only="all", skip_sheets=False) -> int:
                 from garmin_extract.get_weight import get_weight_data
                 from garmin_extract.get_steps import get_step_data
                 stage("garmin_weight", lambda: get_weight_data(client))
-                stage("garmin_steps", lambda: get_step_data(client))
+                stage("garmin_steps", lambda: get_step_data(client, refresh_dates=refresh_dates))
             from garmin_extract.get_sleep_data import get_sleep_data
-            sleep_ok, _ = stage("garmin_sleep", lambda: get_sleep_data(client))
+            sleep_ok, _ = stage("garmin_sleep", lambda: get_sleep_data(client, refresh_dates=refresh_dates))
             if sleep_ok and not skip_sheets:
                 def export_sleep():
                     if not os.environ.get("COACHING_START_DATE"):
@@ -68,6 +73,9 @@ def run_daily(only="all", skip_sheets=False) -> int:
     if only in ("all", "garmin", "health") and not skip_sheets:
         from publish.export_macros import export_macros_to_gsheet
         stage("macros_google_sheets", export_macros_to_gsheet)
+    if only in ("all", "garmin", "sleep", "health") and not skip_sheets:
+        from publish.export_checkins import export_checkins_to_gsheet
+        stage("checkins_google_sheets", export_checkins_to_gsheet)
     success = all(value["ok"] for value in stages.values())
     atomic_json(DATA_DIR / "daily_status.json", {"completed_at": utc_now(), "ok": success, "stages": stages})
     return 0 if success else 1

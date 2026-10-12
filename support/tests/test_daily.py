@@ -146,7 +146,9 @@ class DailyTests(unittest.TestCase):
     def test_garmin_failure_does_not_skip_hevy(self):
         settings = Settings(self.root / "health", "test-key")
         with patch.object(main, "DATA_DIR", self.root), patch.object(main, "load_settings", return_value=settings), patch.object(auth, "authenticate", side_effect=RuntimeError("Garmin unavailable")), patch.dict(os.environ, {"START_DATE": "2026-10-01"}), patch.object(main, "sync_hevy", return_value=2) as hevy, patch.object(main, "export_data", return_value={"nutrition_warnings": []}), patch("publish.export_macros.export_macros_to_gsheet") as macros:
-            self.assertEqual(main.run_daily(), 1)
+            with patch("publish.export_checkins.export_checkins_to_gsheet") as checkins:
+                self.assertEqual(main.run_daily(), 1)
+                checkins.assert_called_once()
         hevy.assert_called_once()
         macros.assert_called_once()
         status = json.loads((self.root / "daily_status.json").read_text())
