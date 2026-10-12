@@ -214,4 +214,8 @@ __marimo__/
 project_helper/*
 
 # Google sheet credentials
-project_data/credentials/*
+support/credentials/*
+
+# Private Garmin sessions (including the retired tracked token file).
+garmin_tokens.json
+data/

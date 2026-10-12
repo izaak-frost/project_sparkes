@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Sparkes health pipeline daily
+
+[Timer]
+OnCalendar=*-*-* 10:17:00 Europe/London
+RandomizedDelaySec=180
+Persistent=true
+Unit=sparkes-health-daily.service
+
+[Install]
+WantedBy=timers.target

@@ -1,274 +1,142 @@
 # Project Sparkes
 
-A personal data engineering and full-stack application evolving into a coach–athlete performance platform.
+A personal fitness data platform with daily ingestion on an OCI Linux server.
 
+Current integrations:
 
-## Overview
+- **Garmin Connect:** sleep, daily steps and weight.
+- **Google Sheets:** the existing `SLEEP DATA` worksheet, including coaching-week
+  summaries and preserved notes, plus weight, nutrition and steps in the
+  `MACROS & WEIGHT` diary.
+- **Hevy Pro:** complete workouts, exercises, sets, reps and weights.
+- **Nutracheck via Apple Health:** daily calories and nutrients pushed by a free
+  iPhone Shortcut.
 
-Project Sparkes is a modular fitness data platform designed to ingest, process, and expose personal health and performance data from multiple sources.
+The daily job stores JSON datasets and SQLite workout/nutrition records. An
+authenticated receiver accepts phone uploads independently of that job.
 
-It began as a personal data engineering project focused on Garmin Connect, and is now evolving into a full-stack application with web and mobile interfaces.
+## Deploy to OCI
 
-The system currently:
+Follow [the server walkthrough](support/deploy/OCI.md) for
+`ubuntu@145.241.203.39`, alongside the existing SafeWaters deployment.
+It covers uploading code and credentials, Garmin MFA setup, manual checks,
+the nutrition upload receiver and daily scheduling.
 
-* Extracts and processes fitness data from Garmin Connect
-* Structures and stores datasets locally
-* Exports enriched data to Google Sheets
-* Exposes data via an API for frontend use
+Follow [the iPhone Shortcut guide](support/docs/APPLE_HEALTH.md) to send
+nutrition. The phone must push Apple Health data; the OCI server cannot pull
+it directly. No paid export app is needed for the Shortcut approach.
 
-**Next phase:**
+## Local backend setup
 
-* Integration with Strava (official API) for activity/workout data
-* Expansion into a multi-user coach–athlete platform
-
-
-## Motivation
-
-Most fitness platforms (e.g. Garmin, Strava) operate in silos:
-
-* limited custom analytics
-* poor cross-platform integration
-* restricted data ownership
-
-Project Sparkes aims to:
-
-* unify fitness data across platforms
-* enable deeper, custom analysis
-* improve communication between athlete and coach
-* provide a foundation for a scalable performance tracking product
-
-
-## Vision
-
-Project Sparkes is evolving into a **coach–athlete performance system**, where:
-
-* Athletes own and control their data
-* Coaches can view shared metrics across multiple athletes
-* Insights are derived from combined data sources (Garmin, Strava, nutrition, etc.)
-
-This project serves both as:
-
-* a **portfolio-grade data engineering + full-stack system**
-* and the early foundation of a **potential startup product**
-
-
-## Architecture
-
-### Current Data Flow
-
-1. **Authentication**
-
-   * Secure Garmin Connect login (token-based with credential fallback) 
-
-2. **Data Extraction Pipelines**
-
-   * Sleep data (granular metrics + scores) 
-   * Step data (range batching + missing date handling) 
-   * Weight data (normalised to kg) 
-
-3. **Processing & Transformation**
-
-   * Incremental updates (avoiding duplicate fetches)
-   * Time conversions and derived metrics
-   * Data cleaning and normalisation
-
-4. **Storage**
-
-   * JSON datasets:
-
-     * `sleep_data.json`
-     * `daily_steps.json`
-     * `weights.json`
-
-5. **Export Layer**
-
-   * Google Sheets integration:
-
-     * weekly aggregation
-     * derived metrics (sleep duration, averages)
-     * structured reporting for coaching workflows 
-
-6. **API Layer**
-
-   * FastAPI service exposing:
-
-     * `/weights`
-     * `/steps` 
-
-7. **Orchestration**
-
-   * End-to-end execution via `main.py` 
-
-
-## Features (Current)
-
-* ✅ Garmin Connect integration (authentication + token reuse)
-* ✅ Automated pipelines:
-
-  * Sleep tracking (detailed breakdown + scoring)
-  * Step tracking (gap-aware + refresh logic)
-  * Weight tracking (normalised values)
-* ✅ Incremental data ingestion (efficient updates)
-* ✅ JSON-based storage
-* ✅ Google Sheets export with weekly summaries
-* ✅ FastAPI backend for data access
-
-
-## In Progress
-
-* React frontend (dashboard + visualisations)
-* API expansion (sleep endpoints, aggregated metrics)
-* Data modelling improvements
-
-
-## Next Steps
-
-### 🔗 Strava Integration (Upcoming)
-
-* Integrate **Strava API (official)** for:
-
-  * activities (runs, rides, workouts)
-  * performance metrics (pace, distance, elevation)
-* Merge Garmin + Strava datasets into unified models
-* Enable richer training analysis
-
-
-### 📱 App Development (React Native)
-
-The project is being extended into a **cross-platform application**:
-
-* **Web dashboard** (React)
-* **Mobile app** (React Native)
-
-Planned capabilities:
-
-* Daily performance overview
-* Trend visualisations
-* Athlete check-ins
-* Coach feedback loops
-
-Goal:
-
-> A unified code-driven platform accessible anywhere, with a consistent user experience.
-
-
-### 👥 Multi-User Coach Model (Future)
-
-* Support **multiple athletes per coach**
-* Data access model:
-
-  * athletes own their data
-  * coaches see only what is shared
-* Enable:
-
-  * performance comparisons (within a cohort)
-  * coaching insights at scale
-
-
-### 📊 Data Expansion
-
-Planned data sources:
-
-* Garmin (existing)
-* Strava (next)
-* Nutrition tracking
-* Training plans / sessions
-* Recovery metrics (HRV, fatigue, etc.)
-
-
-## Tech Stack
-
-### Backend
-
-* Python
-* FastAPI
-* Garmin Connect API (unofficial)
-* python-dotenv
-* gspread (Google Sheets integration)
-
-### Frontend
-
-* React (Vite)
-* React Native (planned)
-
-### Data
-
-* JSON (current)
-* Planned:
-
-  * SQL (PostgreSQL / SQLite)
-  * analytics-ready schema
-
-
-## Project Structure
-
-```id="csp9b0"
-project_sparkes/
-├── project_data/
-│   └── garmin_sync/
-│       ├── extract_methods/
-│       ├── export_methods/
-│       ├── sub_modules/
-│       └── main.py
-├── project_app/          # React frontend (in progress)
-├── api.py                # FastAPI service
-├── data/                 # Generated datasets
-```
-
-
-## Getting Started
-
-### Backend
+Use Python 3.10 or newer:
 
 ```bash
-cd project_data
-python -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+python -m venv .venv-health
+```
+
+Activate your environment, then:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Copy `.env.example` to `.env`, fill in the values,
+then save a Garmin session interactively:
+
+```bash
+python main.py --garmin-login
+```
+
+Run the combined daily job:
+
+```bash
 python main.py
 ```
 
-### API
+Other useful commands:
 
 ```bash
-uvicorn api:app --reload
+python main.py --only sleep
+python main.py --only garmin --skip-sheets
+python main.py --only health
+python -m support.sync --only hevy
+python -m publish.export_macros --dry-run
+python -m publish.export_macros
+python -m unittest discover -s support/tests -v
 ```
 
-### Frontend
+Each source is reported separately in `data/daily_status.json`.
+A failed source does not prevent independent sources from updating. The job
+exits nonzero if a source fails or nutrition is absent/stale, while retaining
+successfully collected data.
 
-```bash
-cd project_app
-npm install
-npm run dev
+The macros publisher matches dates in column B from row 39. It imports Garmin
+weight and steps plus Apple Health calories, protein, carbs and fat, retaining
+manual values wherever a source is missing. Weekly averages are formulas in
+columns C, J and L. Zero weight and nutrition quantities are shown as blanks
+and excluded from averages; a zero step count remains valid. A complete blank
+week follows the current Tuesday–Monday
+week, using the existing diary's calendar and formatting. Notes, coaching
+changes and the top dashboard's input cells remain untouched. A pre-update snapshot is kept
+in `data/publish/macros_before_publish.json`. `--skip-sheets` skips both publishers.
+
+Each macros refresh also updates the two existing dashboard charts: average daily
+steps by Tuesday–Monday week, and daily calories/body weight on separate axes.
+Both cover the rolling twelve months ending on the refresh date (inclusive).
+Partial weeks use only dates inside that window; missing readings stay blank.
+The formulas live in the hidden `_Sparkes chart data` tab and follow diary edits.
+Calories connect only across consecutive recorded days. A separate plotted
+weight trend linearly joins recorded weigh-ins, without filling the diary's
+missing weights or extrapolating beyond the first/last recorded weigh-in.
+The publisher updates chart source data without rewriting chart specifications:
+the REST API drops manually configured right-axis bounds even when copying the
+saved specification. To update native chart dates while preserving styling,
+paste `publish/refresh_chart_dates.gs` into the spreadsheet's Extensions > Apps
+Script editor, then run `installSparkesChartRefresh` once and authorise it.
+The native refresh runs hourly and updates date ranges/subtitles. It restores
+the captured calorie bounds 1,500–3,000 and weight bounds 95–103 if missing.
+
+Garmin steps re-fetch today and the previous six days on every run, replacing
+earlier totals for those dates. Missing older dates are fetched as before.
+
+## Files
+
+```text
+project_sparkes/
+  main.py                  Combined daily entry point
+  requirements.txt         Backend dependencies
+  .env.example             Configuration template
+  garmin_extract/          Garmin authentication, sleep, steps and weight
+  health_extract/          Apple Health upload receiver and nutrition ingestion
+  hevy_extract/            Hevy workout extraction
+  publish/                 Google Sheets sleep publishing
+  support/                 Helpers, configuration and setup
+    scripts/               Local server startup and data migration
+    docs/                  iPhone Shortcut and local setup guides
+    deploy/                OCI services and server walkthrough
+    tests/                 Pipeline and publishing checks
+    credentials/           Private keys and local upload token (ignored)
+  data/
+    garmin/                Sleep, steps, weight and saved sessions
+    health/                Nutrition database, CSV and JSON
+    hevy/                  Workout database and JSON
+    publish/               Saved Sheets notes and retry state
+    archive/               Retired files and original migration backups
 ```
 
----
+The unused demo API is archived locally under `data/archive/unused-code`.
 
-## Environment Variables
+Keep environment files, Google credentials, Garmin sessions, and generated
+personal data out of Git. Back up the server's configuration and data separately
+from the source repository.
 
-```id="n0l2yf"
-GARMIN_EMAIL=your_email
-GARMIN_PASSWORD=your_password
-GARMIN_TOKENS=garmin_tokens.json
+Start the local receiver from a PowerShell terminal at the repository root:
 
-START_DATE=YYYY-MM-DD             # Date to collect data from
-COACHING_START_DATE=YYYY-MM-DD    # Date that coaching begins (enables historical data to be viewed seperately)
-
-GOOGLE_SERVICE_ACCOUNT_FILE=path_to_credentials.json
-GOOGLE_SHEET_ID=your_sheet_id
+```powershell
+.\support\scripts\start-local.ps1
 ```
 
-
-## Why This Project Matters
-
-Project Sparkes demonstrates:
-
-* Data engineering (pipelines, incremental ingestion)
-* API design (FastAPI service layer)
-* Full-stack development (React + mobile direction)
-* Real-world problem solving (coach–athlete workflows)
-
-It is both:
-
-* a **production-style personal system**
-* and an evolving **product with real user value**
+See [the local guide](support/docs/LOCAL.md) for upload settings. When updating
+an existing installation with the old layout, stop its receiver and daily job,
+then run `python support/scripts/migrate-layout.py` from the repository root before restarting.
+The migration retains the original shared database under `data/archive`.

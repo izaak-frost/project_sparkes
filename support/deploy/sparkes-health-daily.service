@@ -1,0 +1,17 @@
+[Unit]
+Description=Sparkes daily Garmin sleep, Sheets, Hevy and nutrition pipeline
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=sparkes
+Group=sparkes
+WorkingDirectory=/opt/project-sparkes
+ExecStart=/opt/project-sparkes/.venv-health/bin/python /opt/project-sparkes/main.py
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/project-sparkes/data

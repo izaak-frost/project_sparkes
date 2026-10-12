@@ -1,0 +1,8 @@
+# Backend dependencies for extraction, uploads and Google Sheets publishing.
+garminconnect==0.3.1
+gspread==6.2.1
+requests>=2.32,<3
+fastapi>=0.115,<1
+uvicorn>=0.30,<1
+python-dotenv>=1,<2
+tzdata>=2024.1
