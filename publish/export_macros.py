@@ -12,6 +12,10 @@ from support.storage import atomic_json
 
 WORKSHEET_NAME = "MACROS & WEIGHT"
 START_ROW = 39
+# Column M is manual comments; the existing notes blocks now occupy N:Z.
+DIARY_END_COLUMN = 26  # Exclusive, zero-based boundary after Z.
+NOTES_START_COLUMN = 13  # N
+NOTES_END_COLUMN = 20  # Exclusive boundary after T.
 COLUMNS = {"weight": "D", "protein": "E", "carbs": "F", "fat": "G",
            "calories": "I", "steps": "K"}
 
@@ -123,11 +127,11 @@ def plan_extension(worksheet, dates, metadata, as_of):
     template_start = START_ROW - 1 + existing - 7
     template_end = template_start + 7
     source = {"sheetId": worksheet.id, "startRowIndex": template_start,
-              "endRowIndex": template_end, "startColumnIndex": 0, "endColumnIndex": 25}
+              "endRowIndex": template_end, "startColumnIndex": 0, "endColumnIndex": DIARY_END_COLUMN}
     merges = [merge for merge in metadata.get("merges", [])
               if merge.get("startRowIndex", 0) >= template_start
               and merge.get("endRowIndex", 0) <= template_end
-              and merge.get("endColumnIndex", 0) <= 25]
+              and merge.get("endColumnIndex", 0) <= DIARY_END_COLUMN]
     for index in range(existing, required_days, 7):
         start = START_ROW - 1 + index
         destination = {**source, "startRowIndex": start, "endRowIndex": start + 7}
@@ -161,10 +165,11 @@ def plan_formatting(worksheet, dates):
         requests.append({"repeatCell": {"range": {**base, "startColumnIndex": left, "endColumnIndex": right},
                          "cell": {"userEnteredFormat": {"numberFormat": {"type": kind, "pattern": pattern}}},
                          "fields": "userEnteredFormat.numberFormat"}})
-    # M480:S486 is the supplied template. A smaller diary uses its last full week.
+    # N480:T486 is the supplied template. A smaller diary uses its last full week.
     template_start = 479 if end >= 486 and worksheet.row_count >= 486 else end - 7
     source = {"sheetId": worksheet.id, "startRowIndex": template_start,
-              "endRowIndex": template_start + 7, "startColumnIndex": 12, "endColumnIndex": 19}
+              "endRowIndex": template_start + 7, "startColumnIndex": NOTES_START_COLUMN,
+              "endColumnIndex": NOTES_END_COLUMN}
     for index in range(0, len(dates), 7):
         start = START_ROW - 1 + index
         values.append({"range": f"A{start + 1}", "values": [[f"WEEK {index // 7 + 1}"]]})
@@ -220,8 +225,8 @@ def export_macros_to_gsheet(dry_run=False):
         print("Dry run: no spreadsheet contents changed.")
         return
     # Keep a private pre-update snapshot for recovery. The publish scope never rewrites notes.
-    all_values = worksheet.get(f"A1:AQ{worksheet.row_count}", value_render_option="FORMULA")
-    if before > len(dates) and any(any(value not in (None, "") for value in row[25:])
+    all_values = worksheet.get(f"A1:AR{worksheet.row_count}", value_render_option="FORMULA")
+    if before > len(dates) and any(any(value not in (None, "") for value in row[DIARY_END_COLUMN:])
                                   for row in all_values[START_ROW - 1 + len(dates):START_ROW - 1 + before]):
         raise ValueError("Extra week rows contain content outside the diary; no cells changed")
     snapshot = {"spreadsheet_id": spreadsheet.id, "worksheet_id": worksheet.id,

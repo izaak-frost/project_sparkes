@@ -73,7 +73,8 @@ successfully collected data.
 The macros publisher matches dates in column B from row 39. It imports Garmin
 weight and steps plus Apple Health calories, protein, carbs and fat, retaining
 manual values wherever a source is missing. Weekly averages are formulas in
-columns C, J and L. Zero weight and nutrition quantities are shown as blanks
+columns C, J and L. Column M is reserved for manual comments; notes formatting
+uses N:T and the complete weekly template spans A:Z. Zero weight and nutrition quantities are shown as blanks
 and excluded from averages; a zero step count remains valid. A complete blank
 week follows the current Tuesday–Monday
 week, using the existing diary's calendar and formatting. Notes, coaching

@@ -29,7 +29,7 @@ class MacrosTests(unittest.TestCase):
         copies = [request["copyPaste"] for request in requests if "copyPaste" in request]
         self.assertEqual(len(copies), 63)
         self.assertTrue(all(item["source"]["startRowIndex"] == 479 and item["source"]["endRowIndex"] == 486
-                            and item["source"]["startColumnIndex"] == 12 and item["source"]["endColumnIndex"] == 19
+                            and item["source"]["startColumnIndex"] == 13 and item["source"]["endColumnIndex"] == 20
                             and item["pasteType"] == "PASTE_FORMAT" for item in copies))
         calendar = {item["range"]: item["values"] for item in values}
         self.assertEqual(calendar["A480"], [["WEEK 64"]])
@@ -57,7 +57,7 @@ class MacrosTests(unittest.TestCase):
         worksheet = MagicMock(id=123, row_count=52)
         dates = self.dates()
         metadata = {"merges": [{"sheetId": 123, "startRowIndex": 45, "endRowIndex": 52,
-                                "startColumnIndex": 19, "endColumnIndex": 25}]}
+                                "startColumnIndex": 20, "endColumnIndex": 26}]}
         requests, updates = macros.plan_extension(worksheet, dates, metadata, date(2026, 10, 13))
         self.assertEqual(max(dates), date(2026, 10, 26))
         self.assertEqual(len(dates), 21)
@@ -65,6 +65,9 @@ class MacrosTests(unittest.TestCase):
         self.assertEqual([r["copyPaste"]["pasteType"] for r in requests if "copyPaste" in r], ["PASTE_FORMAT", "PASTE_CONDITIONAL_FORMATTING"])
         copied_merge = next(r["mergeCells"]["range"] for r in requests if "mergeCells" in r)
         self.assertEqual((copied_merge["startRowIndex"], copied_merge["endRowIndex"]), (52, 59))
+        self.assertEqual((copied_merge["startColumnIndex"], copied_merge["endColumnIndex"]), (20, 26))
+        self.assertTrue(all(r["copyPaste"]["source"]["endColumnIndex"] == 26
+                            for r in requests if "copyPaste" in r))
         self.assertTrue(all(update["range"].startswith(("A", "B")) for update in updates))
         more, _ = macros.plan_extension(MagicMock(id=123, row_count=59), dates, metadata, date(2026, 10, 13))
         self.assertEqual(more, [])
