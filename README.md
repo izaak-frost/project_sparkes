@@ -81,9 +81,10 @@ week, using the existing diary's calendar and formatting. Notes, coaching
 changes and the top dashboard's input cells remain untouched. A pre-update snapshot is kept
 in `data/publish/macros_before_publish.json`. `--skip-sheets` skips both publishers.
 
-Each macros refresh also updates the two existing dashboard charts: average daily
-steps by Tuesday–Monday week, and daily calories/body weight on separate axes.
-Both cover the rolling twelve months ending on the refresh date (inclusive).
+Each macros refresh updates the source data for all three dashboard charts:
+average weekly steps above, daily calorie intake on the left and body weight on the right. The calorie axis
+is fixed at 1,500–3,000 kcal and the weight axis at 95–105 kg.
+All three cover the rolling 60 days ending on the refresh date (inclusive).
 Partial weeks use only dates inside that window; missing readings stay blank.
 The formulas live in the hidden `_Sparkes chart data` tab and follow diary edits.
 Calories connect only across consecutive recorded days. A separate plotted
@@ -94,8 +95,11 @@ the REST API drops manually configured right-axis bounds even when copying the
 saved specification. To update native chart dates while preserving styling,
 paste `publish/refresh_chart_dates.gs` into the spreadsheet's Extensions > Apps
 Script editor, then run `installSparkesChartRefresh` once and authorise it.
-The native refresh runs hourly and updates date ranges/subtitles. It restores
-the captured calorie bounds 1,500–3,000 and weight bounds 95–103 if missing.
+The native refresh runs daily around 06:00 Europe/London (within approximately
+15 minutes) and sets chart series, titles, date ranges and
+axis bounds while retaining chart positions. When updating this script, replace
+the installed Apps Script source and run `installSparkesChartRefresh` again;
+pulling Python changes on OCI does not update the installed spreadsheet script.
 
 Garmin steps re-fetch today and the previous six days on every run, replacing
 earlier totals for those dates. Missing older dates are fetched as before.

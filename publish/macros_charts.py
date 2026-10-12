@@ -1,4 +1,4 @@
-"""Rolling-year chart formulas and native Google Sheets chart specifications."""
+"""Rolling 60-day chart formulas and native Google Sheets chart specifications."""
 from copy import deepcopy
 from datetime import date, timedelta
 
@@ -10,16 +10,13 @@ def serial(day):
     return (day - date(1899, 12, 30)).days
 
 
-def year_window(as_of):
-    try:
-        anniversary = as_of.replace(year=as_of.year - 1)
-    except ValueError:  # 29 February follows 28 February in a non-leap year.
-        anniversary = as_of.replace(year=as_of.year - 1, day=28)
-    return anniversary + timedelta(days=1), as_of
+def chart_window(as_of):
+    # Include today: 59 previous days plus today is exactly 60 days.
+    return as_of - timedelta(days=59), as_of
 
 
 def chart_rows(title, first_day, last_row, as_of):
-    start, end = year_window(as_of)
+    start, end = chart_window(as_of)
     source = "'" + title.replace("'", "''") + "'!"
     dates = f"{source}$B$39:$B${last_row}"
     steps = f"{source}$K$39:$K${last_row}"
@@ -56,15 +53,19 @@ def chart_rows(title, first_day, last_row, as_of):
     return rows, weekly_count
 
 
-def plan_charts(metadata, diary, first_day, last_row, as_of):
+def plan_charts(metadata, diary, first_day, last_row, as_of, *, include_chart_specs=False):
     charts = diary.get("charts", [])
-    if len(charts) != 2 or any("overlayPosition" not in chart.get("position", {}) for chart in charts):
-        raise ValueError("Expected the two existing dashboard charts; no chart changes made")
+    steps_charts = [chart for chart in charts if chart.get("spec", {}).get("title", "").strip().upper() == "AVERAGE WEEKLY STEPS"]
+    daily_charts = [chart for chart in charts if chart not in steps_charts]
+    # Publishing the helper table must work even while charts are being edited.
+    # Native Apps Script owns the visible charts; spec planning is opt-in only.
+    if include_chart_specs and (len(daily_charts) != 2 or len(steps_charts) > 1 or
+                               any("overlayPosition" not in chart.get("position", {}) for chart in charts)):
+        raise ValueError("Expected two calorie/weight charts and at most one weekly steps chart")
     def anchor(chart):
         cell = chart["position"]["overlayPosition"]["anchorCell"]
-        return cell.get("rowIndex", 0), cell.get("columnIndex", 0)
-    top = min(charts, key=anchor)
-    bottom = next(chart for chart in charts if chart is not top)
+        overlay = chart["position"]["overlayPosition"]
+        return cell.get("columnIndex", 0), overlay.get("offsetXPixels", 0), cell.get("rowIndex", 0)
     helper = next((sheet for sheet in metadata["sheets"] if sheet["properties"]["title"] == HELPER_TITLE), None)
     requests = []
     if helper is None:
@@ -81,7 +82,7 @@ def plan_charts(metadata, diary, first_day, last_row, as_of):
     def cell(value):
         key = "formulaValue" if isinstance(value, str) and value.startswith("=") else "stringValue" if isinstance(value, str) else "numberValue"
         return {"userEnteredValue": {key: value}}
-    # Clear the old trailing day/week when a leap-year window becomes shorter.
+    # Clear trailing data left by the previous, longer chart window.
     filled = rows + [[""] * 11 for _ in range(HELPER_ROWS - len(rows))]
     requests.append({"updateCells": {"range": {"sheetId": helper_id, "startRowIndex": 0,
         "endRowIndex": HELPER_ROWS, "startColumnIndex": 0, "endColumnIndex": 11},
@@ -92,13 +93,43 @@ def plan_charts(metadata, diary, first_day, last_row, as_of):
             "endRowIndex": HELPER_ROWS, "startColumnIndex": column, "endColumnIndex": column + 1},
             "cell": {"userEnteredFormat": {"numberFormat": {"type": kind, "pattern": pattern}}},
             "fields": "userEnteredFormat.numberFormat"}})
-    start, end = year_window(as_of)
+    if not include_chart_specs:
+        return requests
+    left = min(daily_charts, key=anchor)
+    start, end = chart_window(as_of)
     for chart in charts:
-        # Preserve the actual saved chart, including axis options whose defaults
-        # differ from the API's EXPLICIT mode. Never rebuild the user's styling.
+        # Apps Script applies these chart changes natively; REST can lose bounds.
         spec = deepcopy(chart["spec"])
         basic = spec["basicChart"]
-        count = weekly_count if chart is top else daily_count
+        is_steps = chart in steps_charts
+        calories = chart is left
+        metric_column = 1 if is_steps else 4 if calories else 10
+        spec["title"] = "AVERAGE WEEKLY STEPS" if is_steps else "CALORIE INTAKE" if calories else "BODY WEIGHT"
+        basic["chartType"] = "LINE"
+        basic["interpolateNulls"] = False
+        def data(column):
+            return {"sourceRange": {"sources": [{"sheetId": helper_id,
+                "startRowIndex": 0, "endRowIndex": daily_count + 1,
+                "startColumnIndex": column, "endColumnIndex": column + 1}]}}
+        basic["domains"] = [{"domain": data(0 if is_steps else 3)}]
+        basic["series"] = [{"series": data(metric_column), "targetAxis": "LEFT_AXIS",
+            "color": {"red": 0.96, "green": 0.42, "blue": 0.09} if calories else
+                     {"red": 0.43, "green": 0.28, "blue": 0.81},
+            "lineStyle": {"width": 2, "type": "SOLID"},
+            "pointStyle": {"size": 2 if calories else 0}}]
+        horizontal = deepcopy(next((axis for axis in basic.get("axis", [])
+                                    if axis["position"] == "BOTTOM_AXIS"), {"position": "BOTTOM_AXIS"}))
+        basic["axis"] = [horizontal, {"position": "LEFT_AXIS",
+            "title": "Calories (kcal)" if calories else "Body weight (kg)",
+            "viewWindowOptions": {"viewWindowMode": "EXPLICIT",
+                "viewWindowMin": 1500 if calories else 95,
+                "viewWindowMax": 3000 if calories else 105}}]
+        if is_steps:
+            basic["axis"][1] = deepcopy(next((axis for axis in chart["spec"]["basicChart"].get("axis", [])
+                if axis["position"] == "LEFT_AXIS"), {"position": "LEFT_AXIS", "title": "Steps / day"}))
+            basic["series"] = deepcopy(chart["spec"]["basicChart"]["series"][:1])
+            basic["series"][0]["series"] = data(1)
+        count = weekly_count if is_steps else daily_count
         sources = [domain["domain"] for domain in basic.get("domains", [])]
         sources.extend(series["series"] for series in basic.get("series", []))
         for data in sources:

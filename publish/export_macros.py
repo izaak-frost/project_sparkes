@@ -244,7 +244,7 @@ def export_macros_to_gsheet(dry_run=False):
     # Never rewrite chart specifications through REST: Google drops the user's
     # right-axis bounds even when cloning the complete saved specification.
     # Native chart date settings are handled by refresh_chart_dates.gs.
-    spreadsheet.batch_update({"requests": [r for r in chart_requests if "updateChartSpec" not in r]})
+    spreadsheet.batch_update({"requests": chart_requests})
     print("Chart source data refreshed; native chart dates require the installed Apps Script refresh.")
     print("Published weight, macros and steps; next week's blank block is available.")
 
